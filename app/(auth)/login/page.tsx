@@ -14,7 +14,7 @@ export default function LoginPage() {
   const [senha, setSenha] = useState('');
   const [alerta, setAlerta] = useState<{ texto: string; tipo: 'sucesso' | 'erro' } | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAlerta(null);
 
@@ -30,7 +30,7 @@ export default function LoginPage() {
       if (res.ok) {
         setAlerta({ texto: 'Login realizado com sucesso!', tipo: 'sucesso' });
         setTimeout(() => {
-          router.push('/dashboard');
+          router.push('/narrativa'); // <-- Redireciona para a tela de narrativa
         }, 1200);
       } else {
         setAlerta({ texto: data.error || 'E-mail ou senha incorretos.', tipo: 'erro' });
