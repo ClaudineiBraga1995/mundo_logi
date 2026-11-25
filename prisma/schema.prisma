@@ -3,31 +3,33 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql" 
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// Exemplo de tabela de Usuário
 model Usuario {
-  id        String   @id @default(uuid())
-  nome      String
-  email     String   @unique
-  senha     String
-  dataNasc  DateTime @db.Date
-  criadoEm  DateTime @default(now())
+  id         String      @id @default(uuid())
+  nome       String
+  email      String      @unique
+  senha      String
+  dataNasc   DateTime    @db.Date
+  criadoEm   DateTime    @default(now())
+  progressos Progresso[]
 
-  @@map("usuario") // Nome exato da tabela no banco de dados
+  @@map("usuario")
 }
 
-// Exemplo de tabela de Jogo
-model Jogo {
-  id        String   @id @default(uuid())
-  titulo    String
-  descricao String?
-  pontos    Int      @default(0)
-  vidas     Int      @default(0)
-  criadoEm  DateTime @default(now())
+model Progresso {
+  id           String   @id @default(uuid())
+  usuarioId    String
+  pilar        String   // "decomposicao" | "abstracao" | "padroes" | "algoritmo"
+  nivelAtual   Int      @default(0) // Nível de 0 a 8 onde o usuário está
+  rotinaAtual  Int      @default(0) // Rotina 0 ou 1 dentro do nível
+  concluido    Boolean  @default(false)
+  atualizadoEm DateTime @updatedAt
 
-  @@map("jogo")
+  usuario      Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioId, pilar])
+  @@map("progresso")
 }
-
