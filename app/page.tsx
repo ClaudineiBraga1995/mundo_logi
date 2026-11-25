@@ -1,8 +1,17 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 
 export default function Home() {
+  const router = useRouter();
+
+const handleJogarSemLogin = () => {
+  localStorage.clear(); // Garante que nenhuma sessão anterior permaneça ativa
+  router.push('/narrativa');
+};
   return (
     <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-[#e5e4e4] px-4 py-5 font-sans lg:h-screen lg:overflow-hidden lg:p-0">
       {/* Cabeçalho Superior */}
@@ -20,8 +29,8 @@ export default function Home() {
 
       {/* Conteúdo Central */}
       <main className="my-auto flex flex-1 flex-col items-center justify-center gap-8 py-6 lg:mt-10 lg:flex-row lg:gap-[15vw] lg:py-0">
-        {/* Coluna Esquerda: Logo (visível em todas as telas) + Botão Jogar */}
-        <div className="flex flex-col items-center gap-8 lg:gap-[60px]">
+        {/* Coluna Esquerda: Logo + Botão Jogar + Aviso de Modo Livre */}
+        <div className="flex flex-col items-center gap-6 lg:gap-[44px]">
           <Image
             src="/images/logo.png"
             alt="Mundo Lógi Logo"
@@ -31,14 +40,24 @@ export default function Home() {
             className="h-auto w-[230px] max-w-full object-contain sm:w-[270px] lg:w-[300px]"
           />
 
-          <Link href="/jogar">
+          <div className="flex flex-col items-center gap-2.5">
             <Button
               id="btn-jogar"
-              className="w-[160px] py-[10px] text-[18px] lg:w-[250px] lg:py-[12px] lg:text-[22px]"
+              type="button"
+              onClick={handleJogarSemLogin}
+              className="w-[180px] py-[10px] text-[18px] lg:w-[250px] lg:py-[12px] lg:text-[22px]"
             >
               Jogar
             </Button>
-          </Link>
+
+            <p className="max-w-[260px] text-center text-xs leading-relaxed font-semibold text-slate-600">
+              Modo livre sem login (seu progresso não ficará salvo). Para salvar, clique em{' '}
+              <Link href="/login" className="font-extrabold text-[#6f8dca] underline hover:text-[#5b7ab7]">
+                Entrar
+              </Link>
+              .
+            </p>
+          </div>
         </div>
 
         {/* Coluna Direita: Imagem Ilustrativa dos Pilares (oculta no celular) */}
