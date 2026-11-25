@@ -28,6 +28,9 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (res.ok) {
+        if (data.usuario) {
+          localStorage.setItem('mundo_logi_user', JSON.stringify(data.usuario));
+        }
         setAlerta({ texto: 'Login realizado com sucesso!', tipo: 'sucesso' });
         setTimeout(() => {
           router.push('/narrativa');
