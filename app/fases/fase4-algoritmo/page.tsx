@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { GameHud } from '@/components/game/game-hud';
+import { useProgresso } from '@/hooks/use-progresso';
 
 interface AlgorithmStepItem {
   id: string;
@@ -393,6 +394,7 @@ const ALGORITHM_LEVELS: Record<number, AlgorithmLevelData> = {
 
 export default function Fase4AlgoritmoPage() {
   const router = useRouter();
+  const { carregando, progressoInicial, salvarProgresso } = useProgresso('algoritmo');
 
   const [currentLevel, setCurrentLevel] = useState<number>(0);
   const [currentRoutineIndex, setCurrentRoutineIndex] = useState<number>(0);
@@ -473,12 +475,14 @@ export default function Fase4AlgoritmoPage() {
   const initLevel = useCallback((lvlIndex: number, routineIdx = 0) => {
     if (execIntervalRef.current) clearInterval(execIntervalRef.current);
 
-    const lvl = ALGORITHM_LEVELS[lvlIndex];
-    const rtn = lvl.routines[routineIdx];
+    const safeLevel = ALGORITHM_LEVELS[lvlIndex] ? lvlIndex : 0;
+    const lvl = ALGORITHM_LEVELS[safeLevel];
+    const safeRoutine = lvl.routines[routineIdx] ? routineIdx : 0;
+    const rtn = lvl.routines[safeRoutine];
     const randomized = [...rtn.items].sort(() => Math.random() - 0.5);
 
-    setCurrentLevel(lvlIndex);
-    setCurrentRoutineIndex(routineIdx);
+    setCurrentLevel(safeLevel);
+    setCurrentRoutineIndex(safeRoutine);
     setShuffledItems(randomized);
     setSlots(Array(rtn.totalSteps).fill(null));
     setLives(3);
@@ -489,14 +493,16 @@ export default function Fase4AlgoritmoPage() {
     setEndModalState({ open: false, victory: false });
   }, []);
 
-  // Embaralha no cliente após a montagem inicial para evitar mismatch de SSR
+  // Carrega o progresso salvo e embaralha os passos no cliente
   useEffect(() => {
-    initLevel(0, 0);
+    if (!carregando) {
+      initLevel(progressoInicial.nivelAtual, progressoInicial.rotinaAtual);
+    }
     return () => {
       if (execIntervalRef.current) clearInterval(execIntervalRef.current);
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     };
-  }, [initLevel]);
+  }, [carregando, progressoInicial, initLevel]);
 
   const registerMistake = (reason: string) => {
     showFeedback(reason, false);
@@ -536,6 +542,9 @@ export default function Fase4AlgoritmoPage() {
     showFeedback(`PASSO ${targetStepNumber} CORRETO!`, true);
   };
 
+  const hasNextRoutine = currentRoutineIndex + 1 < levelData.routines.length;
+  const hasNextLevel = Boolean(ALGORITHM_LEVELS[currentLevel + 1]);
+
   const runAlgorithmAnimation = () => {
     if (isExecuting) return;
     setIsExecuting(true);
@@ -558,6 +567,15 @@ export default function Fase4AlgoritmoPage() {
         setExecutingStepIndex(null);
         setDisplayGoalEmoji('🎉✅');
         setIsExecuting(false);
+
+        if (hasNextRoutine) {
+          salvarProgresso(currentLevel, currentRoutineIndex + 1, false);
+        } else if (hasNextLevel) {
+          salvarProgresso(currentLevel + 1, 0, false);
+        } else {
+          salvarProgresso(currentLevel, currentRoutineIndex, true);
+        }
+
         setTimeout(() => setEndModalState({ open: true, victory: true }), 600);
       }
     }, 800);
@@ -568,8 +586,13 @@ export default function Fase4AlgoritmoPage() {
   const placedIds = slots.filter((s): s is AlgorithmStepItem => s !== null).map((s) => s.id);
   const remainingItems = shuffledItems.filter((item) => !placedIds.includes(item.id));
 
-  const hasNextRoutine = currentRoutineIndex + 1 < levelData.routines.length;
-  const hasNextLevel = Boolean(ALGORITHM_LEVELS[currentLevel + 1]);
+  if (carregando) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center bg-[#e5e4e4] font-sans text-lg font-extrabold text-[#6f8dca]">
+        CARREGANDO PROGRESSO...
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-[#e5e4e4] p-4 font-sans text-gray-800 select-none">
@@ -578,7 +601,10 @@ export default function Fase4AlgoritmoPage() {
         <GameHud
           levels={LEVELS_OPTIONS}
           currentLevel={currentLevel}
-          onSelectLevel={(lvl) => initLevel(lvl, 0)}
+          onSelectLevel={(lvl) => {
+            initLevel(lvl, 0);
+            salvarProgresso(lvl, 0, false);
+          }}
           faseNivelLabel={levelData.label}
           rotinaAtual={currentRoutineIndex + 1}
           totalRotinas={levelData.routines.length}

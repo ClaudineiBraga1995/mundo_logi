@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { GameHud } from '@/components/game/game-hud';
+import { useProgresso } from '@/hooks/use-progresso';
 
 type DishStatus = 'clean' | 'dirty' | 'broken';
 type BinThemeClass = 'bin-pratos' | 'bin-copos' | 'bin-talheres' | 'bin-panelas';
@@ -457,6 +458,7 @@ const BIN_LABEL_THEME_STYLES: Record<BinThemeClass, string> = {
 
 export default function Fase3PadroesPage() {
   const router = useRouter();
+  const { carregando, progressoInicial, salvarProgresso } = useProgresso('padroes');
 
   const [currentLevel, setCurrentLevel] = useState<number>(0);
   const [currentRoutineIndex, setCurrentRoutineIndex] = useState<number>(0);
@@ -478,6 +480,25 @@ export default function Fase3PadroesPage() {
   const levelData = PATTERNS_LEVELS[currentLevel];
   const routineData = levelData.routines[currentRoutineIndex];
   const totalRequired = routineData.items.filter((i) => i.status === 'clean').length;
+
+  const initLevel = useCallback((lvlIndex: number, routineIdx = 0) => {
+    const safeLevel = PATTERNS_LEVELS[lvlIndex] ? lvlIndex : 0;
+    const nextLvl = PATTERNS_LEVELS[safeLevel];
+    const safeRoutine = nextLvl.routines[routineIdx] ? routineIdx : 0;
+
+    setCurrentLevel(safeLevel);
+    setCurrentRoutineIndex(safeRoutine);
+    setPlacedIds([]);
+    setLives(3);
+    setFeedback(null);
+    setEndModalState({ open: false, victory: false });
+  }, []);
+
+  useEffect(() => {
+    if (!carregando) {
+      initLevel(progressoInicial.nivelAtual, progressoInicial.rotinaAtual);
+    }
+  }, [carregando, progressoInicial, initLevel]);
 
   const playFeedbackSound = (isSuccess: boolean) => {
     try {
@@ -522,15 +543,6 @@ export default function Fase3PadroesPage() {
     }, 2000);
   };
 
-  const initLevel = (lvlIndex: number, routineIdx = 0) => {
-    setCurrentLevel(lvlIndex);
-    setCurrentRoutineIndex(routineIdx);
-    setPlacedIds([]);
-    setLives(3);
-    setFeedback(null);
-    setEndModalState({ open: false, victory: false });
-  };
-
   const registerMistake = (reason: string) => {
     showFeedback(reason, false);
 
@@ -544,6 +556,9 @@ export default function Fase3PadroesPage() {
       });
     }
   };
+
+  const hasNextRoutine = currentRoutineIndex + 1 < levelData.routines.length;
+  const hasNextLevel = Boolean(PATTERNS_LEVELS[currentLevel + 1]);
 
   const handleBinDrop = (binId: string) => {
     if (!draggedItemId) return;
@@ -575,6 +590,14 @@ export default function Fase3PadroesPage() {
     showFeedback(`ISSO AÍ! PADRÃO CORRETO (${item.name})!`, true);
 
     if (updatedPlaced.length === totalRequired) {
+      if (hasNextRoutine) {
+        salvarProgresso(currentLevel, currentRoutineIndex + 1, false);
+      } else if (hasNextLevel) {
+        salvarProgresso(currentLevel + 1, 0, false);
+      } else {
+        salvarProgresso(currentLevel, currentRoutineIndex, true);
+      }
+
       setTimeout(() => setEndModalState({ open: true, victory: true }), 750);
     }
   };
@@ -641,8 +664,13 @@ export default function Fase3PadroesPage() {
     );
   };
 
-  const hasNextRoutine = currentRoutineIndex + 1 < levelData.routines.length;
-  const hasNextLevel = Boolean(PATTERNS_LEVELS[currentLevel + 1]);
+  if (carregando) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center bg-[#e5e4e4] font-sans text-lg font-extrabold text-[#6f8dca]">
+        CARREGANDO PROGRESSO...
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-[#e5e4e4] p-4 font-sans text-gray-800 select-none">
@@ -651,7 +679,10 @@ export default function Fase3PadroesPage() {
         <GameHud
           levels={LEVELS_OPTIONS}
           currentLevel={currentLevel}
-          onSelectLevel={(lvl) => initLevel(lvl, 0)}
+          onSelectLevel={(lvl) => {
+            initLevel(lvl, 0);
+            salvarProgresso(lvl, 0, false);
+          }}
           faseNivelLabel={levelData.label}
           rotinaAtual={currentRoutineIndex + 1}
           totalRotinas={levelData.routines.length}
