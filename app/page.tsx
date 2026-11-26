@@ -54,20 +54,10 @@ export default function Home() {
             >
               Jogar
             </Button>
-
-            <p className="max-w-[260px] text-center text-xs leading-relaxed font-semibold text-slate-600">
-              Modo livre sem login (seu progresso não ficará salvo). Para salvar, clique em{' '}
-            <Link href="/login" prefetch={false}>
-              <Button id="btn-entrar" className="px-6 py-2.5 text-base">
-                Entrar
-              </Button>
-            </Link>
-                          .
-            </p>
           </div>
         </div>
 
-        {/* Coluna Direita: Imagem Ilustrativa dos Pilares (oculta no celular) */}
+        
         <div className="coluna-dir hidden justify-center md:flex">
           <Image
             src="/images/img_ilustrativa.png"
