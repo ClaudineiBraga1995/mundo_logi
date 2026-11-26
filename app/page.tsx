@@ -4,14 +4,19 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { useRedirectIfAuthenticated } from '@/hooks/use-auth-guard';
 
 export default function Home() {
   const router = useRouter();
+  const checkingAuth = useRedirectIfAuthenticated('/narrativa');
 
-const handleJogarSemLogin = () => {
-  localStorage.clear(); // Garante que nenhuma sessão anterior permaneça ativa
-  router.push('/narrativa');
-};
+  const handleJogarSemLogin = () => {
+    localStorage.clear();
+    router.push('/narrativa');
+  };
+
+  if (checkingAuth) return null;
+
   return (
     <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-[#e5e4e4] px-4 py-5 font-sans lg:h-screen lg:overflow-hidden lg:p-0">
       {/* Cabeçalho Superior */}
