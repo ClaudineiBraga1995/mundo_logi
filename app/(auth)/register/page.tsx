@@ -1,20 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { useRedirectIfAuthenticated } from '@/hooks/use-auth-guard';
 
 export default function RegistrePage() {
   const router = useRouter();
+  const checkingAuth = useRedirectIfAuthenticated('/narrativa');
 
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
   const [dataNascimento, setDataNascimento] = useState('');
+  const [enviando, setEnviando] = useState(false);
 
   // Controla o tipo do input de data (muda para 'date' ao focar para exibir o calendário)
   const [inputType, setInputType] = useState<'text' | 'date'>('text');
@@ -25,6 +28,17 @@ export default function RegistrePage() {
 
   const [alerta, setAlerta] = useState<{ texto: string; tipo: 'sucesso' | 'erro' } | null>(null);
 
+  const resetarFormulario = useCallback(() => {
+    setNome('');
+    setEmail('');
+    setSenha('');
+    setConfirmarSenha('');
+    setDataNascimento('');
+    setInputType('text');
+    setEnviando(false);
+    setAlerta(null);
+  }, []);
+
   useEffect(() => {
     const dataAtual = new Date();
     setHoje(dataAtual.toISOString().split('T')[0]);
@@ -32,7 +46,12 @@ export default function RegistrePage() {
     const dataMin = new Date();
     dataMin.setFullYear(dataMin.getFullYear() - 100);
     setMinData(dataMin.toISOString().split('T')[0]);
-  }, []);
+
+    resetarFormulario();
+    return () => {
+      resetarFormulario();
+    };
+  }, [resetarFormulario]);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,9 +73,14 @@ export default function RegistrePage() {
     }
 
     if (dataSelecionada < dataMinima) {
-      setAlerta({ texto: 'Por favor, insira uma data de nascimento válida (máximo 100 anos).', tipo: 'erro' });
+      setAlerta({
+        texto: 'Por favor, insira uma data de nascimento válida (máximo 100 anos).',
+        tipo: 'erro',
+      });
       return;
     }
+
+    setEnviando(true);
 
     try {
       const res = await fetch('/api/usuarios', {
@@ -73,24 +97,40 @@ export default function RegistrePage() {
       const data = await res.json();
 
       if (res.ok) {
-        setAlerta({ texto: 'Cadastro realizado com sucesso! Redirecionando...', tipo: 'sucesso' });
+        setNome('');
+        setEmail('');
+        setSenha('');
+        setConfirmarSenha('');
+        setDataNascimento('');
+        setInputType('text');
+        setAlerta({
+          texto: 'Cadastro realizado com sucesso! Redirecionando...',
+          tipo: 'sucesso',
+        });
+
         setTimeout(() => {
-          router.push('/login');
+          resetarFormulario();
+          router.replace('/login');
+          router.refresh();
         }, 1500);
       } else {
         setAlerta({ texto: data.error || 'Erro ao cadastrar usuário.', tipo: 'erro' });
+        setEnviando(false);
       }
-    } catch (err) {
+    } catch {
       setAlerta({ texto: 'Erro de conexão com o servidor.', tipo: 'erro' });
+      setEnviando(false);
     }
   };
+
+  if (checkingAuth) return null;
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center overflow-x-hidden bg-[#e5e4e4] px-4 py-6 font-sans">
       <main className="flex w-full max-w-[1000px] flex-col items-center justify-center gap-6 md:gap-8 lg:flex-row lg:gap-[12vw]">
         {/* Lado Esquerdo: Logo do Mundo Lógi */}
         <div className="logo-container flex justify-center">
-          <Link href="/">
+          <Link href="/" onClick={resetarFormulario}>
             <Image
               src="/images/logo.png"
               alt="Mundo Lógi Logo"
@@ -117,12 +157,18 @@ export default function RegistrePage() {
               </div>
             )}
 
-            <form id="form-cadastro" onSubmit={handleRegister} className="flex w-full flex-col gap-2.5 lg:gap-[14px]">
+            <form
+              id="form-cadastro"
+              onSubmit={handleRegister}
+              autoComplete="off"
+              className="flex w-full flex-col gap-2.5 lg:gap-[14px]"
+            >
               <input
                 type="text"
                 placeholder="Nome"
                 value={nome}
                 onChange={(e) => setNome(e.target.value)}
+                autoComplete="off"
                 required
                 className="w-full rounded-[12px] bg-[#c8d1d9] px-4 py-2.5 text-[15px] text-black outline-none placeholder:text-[#555] lg:rounded-[14px] lg:px-[20px] lg:py-[12px] lg:text-[16px]"
               />
@@ -138,6 +184,7 @@ export default function RegistrePage() {
                   if (!dataNascimento) setInputType('text');
                 }}
                 onChange={(e) => setDataNascimento(e.target.value)}
+                autoComplete="off"
                 required
                 className="w-full rounded-[12px] bg-[#c8d1d9] px-4 py-2.5 text-[15px] text-black outline-none placeholder:text-[#555] lg:rounded-[14px] lg:px-[20px] lg:py-[12px] lg:text-[16px]"
               />
@@ -147,6 +194,7 @@ export default function RegistrePage() {
                 placeholder="E-mail"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="off"
                 required
                 className="w-full rounded-[12px] bg-[#c8d1d9] px-4 py-2.5 text-[15px] text-black outline-none placeholder:text-[#555] lg:rounded-[14px] lg:px-[20px] lg:py-[12px] lg:text-[16px]"
               />
@@ -156,6 +204,7 @@ export default function RegistrePage() {
                 placeholder="Senha"
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}
+                autoComplete="new-password"
                 required
                 className="w-full rounded-[12px] bg-[#c8d1d9] px-4 py-2.5 text-[15px] text-black outline-none placeholder:text-[#555] lg:rounded-[14px] lg:px-[20px] lg:py-[12px] lg:text-[16px]"
               />
@@ -165,6 +214,7 @@ export default function RegistrePage() {
                 placeholder="Confirmar Senha"
                 value={confirmarSenha}
                 onChange={(e) => setConfirmarSenha(e.target.value)}
+                autoComplete="new-password"
                 required
                 className="w-full rounded-[12px] bg-[#c8d1d9] px-4 py-2.5 text-[15px] text-black outline-none placeholder:text-[#555] lg:rounded-[14px] lg:px-[20px] lg:py-[12px] lg:text-[16px]"
               />
@@ -175,14 +225,16 @@ export default function RegistrePage() {
           <Button
             type="submit"
             form="form-cadastro"
+            disabled={enviando}
             className="w-[150px] py-[7px] text-[15px] lg:w-[160px] lg:py-[8px] lg:text-[16px]"
           >
-            Cadastrar
+            {enviando ? 'Cadastrando...' : 'Cadastrar'}
           </Button>
 
           {/* Link para voltar ao Login */}
           <Link
             href="/login"
+            onClick={resetarFormulario}
             className="text-center text-[14px] font-semibold text-[#1d4ed8] underline transition-colors hover:text-[#1e40af] lg:text-[15px]"
           >
             Já tem conta? Entrar

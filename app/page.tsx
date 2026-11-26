@@ -57,10 +57,12 @@ export default function Home() {
 
             <p className="max-w-[260px] text-center text-xs leading-relaxed font-semibold text-slate-600">
               Modo livre sem login (seu progresso não ficará salvo). Para salvar, clique em{' '}
-              <Link href="/login" className="font-extrabold text-[#6f8dca] underline hover:text-[#5b7ab7]">
+            <Link href="/login" prefetch={false}>
+              <Button id="btn-entrar" className="px-6 py-2.5 text-base">
                 Entrar
-              </Link>
-              .
+              </Button>
+            </Link>
+                          .
             </p>
           </div>
         </div>
