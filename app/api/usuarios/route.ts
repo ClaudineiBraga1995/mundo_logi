@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { hashSenha } from '@/lib/senha';
 
 export async function POST(request: Request) {
   try {
@@ -42,20 +43,35 @@ export async function POST(request: Request) {
       );
     }
 
+    // Gera o hash da senha antes de salvar no banco
+    const senhaHash = await hashSenha(senha);
+
     const novoUsuario = await prisma.usuario.create({
       data: {
-        nome,
-        email,
-        senha,
+        nome: nome.trim(),
+        email: email.trim().toLowerCase(),
+        senha: senhaHash,
         dataNasc: dataFormatada,
+      },
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        dataNasc: true,
+        criadoEm: true,
       },
     });
 
     return NextResponse.json(novoUsuario, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Erro no Prisma:', error);
 
-    if (error?.code === 'P2002') {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      (error as { code?: string }).code === 'P2002'
+    ) {
       return NextResponse.json(
         { error: 'Este e-mail já está em uso.' },
         { status: 400 }

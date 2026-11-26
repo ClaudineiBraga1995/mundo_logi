@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verificarSenha } from '@/lib/senha';
 
 export async function POST(request: Request) {
   try {
@@ -15,11 +16,13 @@ export async function POST(request: Request) {
 
     // Busca o usuário no banco de dados pelo e-mail
     const usuario = await prisma.usuario.findUnique({
-      where: { email },
+      where: { email: email.trim().toLowerCase() },
     });
 
-    // Se o usuário não existir ou a senha não bater
-    if (!usuario || usuario.senha !== senha) {
+    // Verifica se o usuário existe e se a senha bate com o hash (ou texto antigo)
+    const senhaValida = usuario ? await verificarSenha(senha, usuario.senha) : false;
+
+    if (!usuario || !senhaValida) {
       return NextResponse.json(
         { error: 'E-mail ou senha incorretos.' },
         { status: 401 }
