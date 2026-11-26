@@ -6,9 +6,11 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { useRedirectIfAuthenticated } from '@/hooks/use-auth-guard';
 
 export default function LoginPage() {
   const router = useRouter();
+  const checkingAuth = useRedirectIfAuthenticated('/narrativa');
 
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
@@ -33,15 +35,17 @@ export default function LoginPage() {
         }
         setAlerta({ texto: 'Login realizado com sucesso!', tipo: 'sucesso' });
         setTimeout(() => {
-          router.push('/narrativa');
+          router.replace('/narrativa');
         }, 1200);
       } else {
         setAlerta({ texto: data.error || 'E-mail ou senha incorretos.', tipo: 'erro' });
       }
-    } catch (err) {
+    } catch {
       setAlerta({ texto: 'Erro de conexão com o servidor.', tipo: 'erro' });
     }
   };
+
+  if (checkingAuth) return null;
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center overflow-x-hidden bg-[#e5e4e4] px-4 py-6 font-sans">
