@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   title: 'Mundo Lógi',
   description: 'Aplicação de Jogos do Pensamento Computacional',
   icons: {
-    icon: 'public/images/logo.png', // Troque para '/logo.svg' se o seu arquivo for SVG
+    icon: 'public/images/logo.svg', // Troque para '/logo.svg' se o seu arquivo for SVG
   },
 };
 
