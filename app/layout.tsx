@@ -1,10 +1,13 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import { BotaoSom } from '@/components/ui/botao-som'; // <-- Importação correta
+import { BotaoSom } from '@/components/ui/botao-som';
 
 export const metadata: Metadata = {
   title: 'Mundo Lógi',
   description: 'Aplicação de Jogos do Pensamento Computacional',
+  icons: {
+    icon: 'public/images/logo.png', // Troque para '/logo.svg' se o seu arquivo for SVG
+  },
 };
 
 export default function RootLayout({
